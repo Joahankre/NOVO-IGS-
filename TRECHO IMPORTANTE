@@ -1,0 +1,39 @@
+' Iterar sobre todas as folhas do desenho
+For Each drawSheet As Sheet In oDoc.Sheets
+    ' Iterar sobre todas as vistas de desenho nas folhas
+    For Each drawingView As DrawingView In drawSheet.DrawingViews
+        ' Verificar se o DrawingView tem um documento de modelo associado
+        If DrawingView.ReferencedDocumentDescriptor IsNot Nothing Then
+            Dim oModel As Document = DrawingView.ReferencedDocumentDescriptor.ReferencedDocument
+            If oModel IsNot Nothing Then
+                ' Verificar se o modelo é uma peça (IPT) e foi criado com o Frame Generator
+                If oModel.DocumentType = DocumentTypeEnum.kPartDocumentObject AndAlso _
+                   oModel.DocumentInterests.HasInterest("{AC211AE0-A7A5-4589-916D-81C529DA6D17}") Then
+                    ' A peça foi criada com o Frame Generator
+                    MessageBox.Show("A peça " & oModel.DisplayName & " foi criada com o Frame Generator." & vbCrLf & _
+                                     "Nome da folha: " & drawSheet.Name)
+
+                    ' Captura o número da página da folha e formata como 3 dígitos
+                    Dim sheetName As String = drawSheet.Name
+                    Dim pageNumber As String = sheetName.Substring(sheetName.LastIndexOf(":") + 1)
+
+                    ' Verificar se o número da página é menor que 100 para aplicar o formato de 3 dígitos
+                    Dim formattedPageNumber As String
+                    If Integer.TryParse(pageNumber, 0) Then
+                        If Convert.ToInt32(pageNumber) < 100 Then
+                            formattedPageNumber = pageNumber.PadLeft(3, "0"c) ' Formatar com 3 dígitos, por exemplo: 001
+                        Else
+                            formattedPageNumber = pageNumber ' Manter como está se for 100 ou maior
+                        End If
+                    Else
+                        formattedPageNumber = "000" ' Caso o número da página seja inválido
+                    End If
+
+                    ' Acessar e formatar a quantidade personalizada
+                    Dim qtdePersonalizada As String = ""
+                    Try
+                        qtdePersonalizada = oModel.PropertySets.Item("User Defined Properties").Item("QTDE PERSONALIZADA").Value.ToString()
+                    Catch ex As Exception
+                        MessageBox.Show("Erro ao acessar a propriedade personalizada 'QTDE PERSONALIZADA': " & ex.Message)
+                        Return
+                    End Try
